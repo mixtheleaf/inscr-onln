@@ -74,7 +74,7 @@ anchor_left = 0.025
 anchor_top = 0.025
 anchor_right = 0.975
 anchor_bottom = 0.975
-text = "Inscr Mult lobby
+text = "Inscr Mult central server test
 "
 scroll_following = true
 __meta__ = {
@@ -104,24 +104,26 @@ text = "Username: "
 
 [node name="uname" type="LineEdit" parent="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer2"]
 margin_left = 64.0
-margin_right = 368.0
+margin_right = 369.0
 margin_bottom = 17.0
 size_flags_horizontal = 3
 
 [node name="Label2" type="Label" parent="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer2"]
-margin_left = 368.0
+margin_left = 369.0
 margin_top = 2.0
-margin_right = 397.0
+margin_right = 398.0
 margin_bottom = 15.0
 text = "Pfp: "
 
 [node name="ppSelect" type="OptionButton" parent="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer2"]
-margin_left = 397.0
+margin_left = 398.0
 margin_right = 449.0
 margin_bottom = 17.0
 focus_mode = 0
 enabled_focus_mode = 0
-text = "Stoat"
+text = "stoat"
+items = [ "stoat", null, false, 0, null, "cat", null, false, 1, null, "packrat", null, false, 2, null, "mantisgod", null, false, 3, null, "grizzly", null, false, 4, null ]
+selected = 0
 
 [node name="Label3" type="Label" parent="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer2"]
 margin_left = 449.0
@@ -142,27 +144,13 @@ margin_top = 17.0
 margin_right = 508.0
 margin_bottom = 34.0
 
-[node name="hostBtn" type="Button" parent="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer"]
-margin_right = 67.0
-margin_bottom = 17.0
-focus_mode = 0
-enabled_focus_mode = 0
-text = "Host Game"
-
-[node name="joinBtn" type="Button" parent="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer"]
-margin_left = 67.0
-margin_right = 132.0
-margin_bottom = 17.0
-focus_mode = 0
-enabled_focus_mode = 0
-text = "Join Game"
-
-[node name="targetIP" type="LineEdit" parent="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer"]
-margin_left = 132.0
+[node name="joinButton" type="Button" parent="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer"]
 margin_right = 448.0
 margin_bottom = 17.0
+focus_mode = 0
 size_flags_horizontal = 3
-placeholder_text = "IP ADDRESS"
+enabled_focus_mode = 0
+text = "Join Master Server"
 
 [node name="deButton" type="Button" parent="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer"]
 margin_left = 448.0
@@ -240,10 +228,7 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[connection signal="new_challenge" from="." to="Lobby" method="_on_new_challenge"]
-[connection signal="remove_challenge" from="." to="Lobby" method="_remove_challenge"]
-[connection signal="pressed" from="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer/hostBtn" to="." method="host_lobby"]
-[connection signal="pressed" from="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer/joinBtn" to="Lobby" method="_join_game"]
+[connection signal="pressed" from="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer/joinButton" to="." method="connect_to_master"]
 [connection signal="pressed" from="Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer/deButton" to="Lobby" method="_edit_deck"]
 [connection signal="text_entered" from="ChatRoom/VBoxContainer/HBoxContainer/textEdit" to="ChatRoom" method="_on_textEdit_text_entered"]
 [connection signal="pressed" from="ChatRoom/VBoxContainer/HBoxContainer/sendButton" to="ChatRoom" method="_on_sendButton_pressed"]

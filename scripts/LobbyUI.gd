@@ -1,34 +1,32 @@
 extends Control
 
-var cnotify = preload("res://packed/cnotify.tscn")
-var validpfps = ["cat", "grizzly", "stoat", "mantisgod", "packrat"]
+var pListingPrefab = preload("res://packed/pListing.tscn")
 onready var selector_de = $HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer2/dSelect
-onready var cardInfo = get_node("/root/Main/AllCards")
+onready var network_manager = get_node("/root/Main")
+onready var cardInfo = network_manager.get_node("AllCards")
 
-func _on_new_challenge(name: String, portrait: int):
-	var notif = cnotify.instance()
-	notif.get_node("HBoxContainer/Challengername").text = name + " wants to battle you. Accept?"
+func list_players(player_data):
+	clear_player_list()
 	
-	# Connect buttons
-	notif.get_node("HBoxContainer/nbtn").connect("pressed", get_node("/root/Main"), "_decline_challenge", [$HBoxContainer/ScrollContainer/Challenges.get_position_in_parent()])
-	notif.get_node("HBoxContainer/ybtn").connect("pressed", get_node("/root/Main"), "_accept_challenge", [$HBoxContainer/ScrollContainer/Challenges.get_position_in_parent()])
-	notif.get_node("HBoxContainer/Challengerpfp").texture = load("res://gfx/portraits/portrait_" + $HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer2/ppSelect.get_item_text(portrait).to_lower() + ".png")
-	
-	$HBoxContainer/ScrollContainer/Challenges.add_child(notif)
+	for pid in player_data.keys():
+		var pList = pListingPrefab.instance()
+		pList.get_node("HBoxContainer/Challengername").text = player_data[pid]["name"]
+		
+		# Connect challenge button
+		pList.get_node("HBoxContainer/ybtn").connect("pressed", self, "toggle_challenge", [pid, pList.get_node("HBoxContainer/ybtn")])
+		pList.get_node("HBoxContainer/Challengerpfp").texture = load("res://gfx/portraits/portrait_" + player_data[pid]["profile_pic"] + ".png")
+		
+		# Is player in a game?
+		if not player_data[pid]["available"]:
+			pList.get_node("HBoxContainer/ybtn").text = "In-game"
+			pList.get_node("HBoxContainer/ybtn").disabled = true
+		
+		$HBoxContainer/ScrollContainer/Challenges.add_child(pList)
 
-func _remove_challenge(idx):
-	$HBoxContainer/ScrollContainer/Challenges.get_child(idx).queue_free()
+func clear_player_list():
+	for listing in $HBoxContainer/ScrollContainer/Challenges.get_children():
+		listing.queue_free()
 
-func _join_game():
-	get_node("/root/Main").challenge_lobby($HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer/targetIP.text)
-
-func _ready():
-	# Populate profile picture selector
-	var selector = $HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer2/ppSelect
-	
-	for pfp in validpfps:
-		selector.add_item(pfp)
-	
 func _edit_deck():
 	get_node("/root/Main/DeckEdit").visible = true
 	get_node("/root/Main/DeckEdit").ensure_default_deck()
@@ -45,3 +43,32 @@ func populate_deck_list():
 		if not dTest.current_is_dir() and fName.ends_with(".deck"):
 			selector_de.add_item(fName.split(".deck")[0])
 		fName = dTest.get_next()
+
+func toggle_challenge(pid, button):
+	match button.text:
+		
+		"Challenge Player":
+			button.text = "Cancel Challenge"
+			
+			rpc_id(pid, "set_challenge_status", true)
+			
+		"Cancel Challenge":
+			button.text = "Challenge Player"
+			
+			rpc_id(pid, "set_challenge_status", false)
+			
+		"Accept Challenge":
+			network_manager.sLog("Accepted Challenge")
+			
+			network_manager.start_mp_battle(pid)
+
+
+remote func set_challenge_status(state):
+	network_manager.sLog("Challenged by player " + str(get_tree().get_rpc_sender_id()))
+	
+	var btn = $HBoxContainer/ScrollContainer/Challenges.get_child(network_manager.players.keys().find(get_tree().get_rpc_sender_id())).get_node("HBoxContainer/ybtn")
+	
+	if state:
+		btn.text = "Accept Challenge"
+	else:
+		btn.text = "Challenge Player"

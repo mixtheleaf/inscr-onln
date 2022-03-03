@@ -17,6 +17,8 @@ var opponent = -100
 var initial_deck = []
 var side_deck_index = null
 
+var went_first_last = false
+
 # Game components
 onready var handManager = $HandsContainer/Hands
 onready var playerSlots = $CardSlots/PlayerSlots
@@ -61,8 +63,9 @@ var turns_starving = 0
 # Network match state
 var want_rematch = false
 
-func init_match(opp_id: int):
+func init_match(opp_id: int, go_first: bool):
 	opponent = opp_id
+	went_first_last = go_first
 	
 	# Hide rematch UI
 	$WinScreen.visible = false
@@ -112,7 +115,7 @@ func init_match(opp_id: int):
 		
 	draw_card(side_deck.pop_front())
 	
-	$WaitingBlocker.visible = not get_tree().is_network_server()
+	$WaitingBlocker.visible = not go_first
 
 
 # Gameplay functions
@@ -365,12 +368,13 @@ func quit_match():
 	# Tell opponent I surrendered
 	rpc_id(opponent, "_opponent_quit")
 	
-	# Force a disconnect if I'm server
-	if get_tree().is_network_server():
-		get_tree().network_peer.disconnect_peer(opponent)
-	else:
-		get_tree().network_peer = null
-		visible = false
+	# Disconnect from server
+	get_tree().network_peer = null
+	visible = false
+	
+	# Clear player list
+	get_node("/root/Main/Lobby").clear_player_list()
+	
 ## REMOTE
 remote func _opponent_quit():
 	# Quit network
@@ -386,12 +390,12 @@ remote func _rematch_requested():
 	if want_rematch:
 		rpc_id(opponent, "_rematch_occurs")
 		
-		init_match(opponent)
+		init_match(opponent, not went_first_last)
 	else:
 		$WinScreen/Panel/VBoxContainer/HBoxContainer/RematchBtn.text = "Rematch (1/2)"	
 
 remote func _rematch_occurs():
-	init_match(opponent)
+	init_match(opponent, not went_first_last)
 
 remote func start_turn():
 	damage_stun = false
