@@ -1,7 +1,8 @@
 extends Node
 
 const VERSION = "v0.0.7MS"
-const DEFAULT_PORT = 10567
+const DEFAULT_PORT = 8080
+const HEROKU = true
 
 const MAX_PEERS = 8
 
@@ -81,7 +82,7 @@ func host_lobby():
 	
 	sLog("Lobby open with ip " + localip)
 	
-func connect_to_master(ip = "localhost"):
+func connect_to_master(ip = "inscr-server-test.herokuapp.com"):
 	if not ip:
 		sLog("Please enter an IP")
 		return
@@ -192,6 +193,11 @@ func _ready():
 	get_tree().connect("server_disconnected", self, "_server_disconnected")
 	
 	$VersionLabel.text = VERSION
+	
+#	# Temp for heroku deploy
+	if HEROKU:
+		master_server()
+		return
 	
 	if not OS.is_debug_build():
 		return
