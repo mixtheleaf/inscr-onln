@@ -1,9 +1,10 @@
 extends Node
 
 const VERSION = "v0.0.7HP"
-const DEFAULT_PORT = 10567
+const RENDEVOUZ_ADDR = "192.168.0.12"
+const RENDEVOUZ_PORT = 3000
 
-const MAX_PEERS = 8
+var hole_puncher = null
 
 # Current challengers
 var challengers = {}
@@ -78,16 +79,24 @@ func host_lobby():
 		sLog("Cancelling existing hosting / connection attempt...")
 		get_tree().network_peer = null
 	
+	# NAT Hole Punching Server Setup
+	hole_puncher = preload("res://addons/Holepunch/holepunch_node.gd").new()
+	hole_puncher.rendevouz_address = RENDEVOUZ_ADDR
+	hole_puncher.rendevouz_port = RENDEVOUZ_PORT
+	add_child(hole_puncher)
+	
+	var my_id = "host"
+	hole_puncher.start_traversal("abacus", true, my_id)
+	var result = yield(hole_puncher, 'hole_punched')
+	
+	print(result)
+	var my_port = result[0]
+	
 	var peer = NetworkedMultiplayerENet.new()
-	peer.create_server(DEFAULT_PORT, MAX_PEERS)
+	peer.create_server(my_port, 1)
 	get_tree().network_peer = peer
 	
-	var localip = "Unknown"
-	for ip in IP.get_local_addresses():
-		if ip.begins_with("192"):
-			localip = ip
-	
-	sLog("Lobby open with ip " + localip)
+	sLog("Lobby open with code " + "abacus")
 	
 func challenge_lobby(ip):
 	if not ip:
@@ -112,8 +121,22 @@ func challenge_lobby(ip):
 	
 	sLog("Attempting to connect to " + ip + ", please wait up to 1 minute")
 	
+	# NAT hole-punch
+	hole_puncher = preload("res://addons/Holepunch/holepunch_node.gd").new()
+	hole_puncher.rendevouz_address = RENDEVOUZ_ADDR
+	hole_puncher.rendevouz_port = RENDEVOUZ_PORT
+	add_child(hole_puncher)
+	
+	var my_id = "niceu"
+	hole_puncher.start_traversal("abacus", false, my_id)
+	var result = yield(hole_puncher, 'hole_punched')
+	
+	var host_ip = result[2]
+	var host_port = result[1]
+	var own_port = result[0]
+	
 	var peer = NetworkedMultiplayerENet.new()
-	var err = peer.create_client(ip, DEFAULT_PORT)
+	var err = peer.create_client(host_ip, host_port, 0, 0, own_port)
 	
 	if not err:
 		get_tree().network_peer = peer
@@ -232,6 +255,8 @@ func _ready():
 	get_tree().connect("server_disconnected", self, "_server_disconnected")
 	
 	$VersionLabel.text = VERSION
+	
+	return
 	
 	if not OS.is_debug_build():
 		return
