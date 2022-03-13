@@ -2,7 +2,8 @@ extends Node
 
 const VERSION = "v0.0.7MS"
 const DEFAULT_PORT = 8080
-const HEROKU = true
+const SERVER_ONLY = false
+const SERVER_IP = "ws://1a76eae2bc6e64.lhrtunnel.link/"
 
 const MAX_PEERS = 8
 
@@ -53,36 +54,36 @@ func _server_disconnected():
 
 ## Actual game functions
 
-func host_lobby():
-	if not $Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer2/uname.text:
-		sLog("Please enter a username")
-		return
+#func host_lobby():
+#	if not $Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer2/uname.text:
+#		sLog("Please enter a username")
+#		return
+#
+#	# Deck check
+#	var dFile = File.new()
+#	dFile.open($AllCards.deck_path + $Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer2/dSelect.text + ".deck", File.READ)
+#	if len(parse_json(dFile.get_as_text())) == 0:
+#		sLog("Your deck is empty!")
+#		dFile.close()
+#		return
+#	dFile.close()
+#
+#	if get_tree().network_peer:
+#		sLog("Cancelling existing hosting / connection attempt...")
+#		get_tree().network_peer = null
+#
+#	var peer = WebSocketServer.new()
+#	peer.listen(DEFAULT_PORT, PoolStringArray(), true)
+#	get_tree().network_peer = peer
+#
+#	var localip = "Unknown"
+#	for ip in IP.get_local_addresses():
+#		if ip.begins_with("192"):
+#			localip = ip
+#
+#	sLog("Lobby open with ip " + localip)
 	
-	# Deck check
-	var dFile = File.new()
-	dFile.open($AllCards.deck_path + $Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer2/dSelect.text + ".deck", File.READ)
-	if len(parse_json(dFile.get_as_text())) == 0:
-		sLog("Your deck is empty!")
-		dFile.close()
-		return
-	dFile.close()
-	
-	if get_tree().network_peer:
-		sLog("Cancelling existing hosting / connection attempt...")
-		get_tree().network_peer = null
-	
-	var peer = NetworkedMultiplayerENet.new()
-	peer.create_server(DEFAULT_PORT, MAX_PEERS)
-	get_tree().network_peer = peer
-	
-	var localip = "Unknown"
-	for ip in IP.get_local_addresses():
-		if ip.begins_with("192"):
-			localip = ip
-	
-	sLog("Lobby open with ip " + localip)
-	
-func connect_to_master(ip = "inscr-server-test.herokuapp.com"):
+func connect_to_master(ip = SERVER_IP):
 	if not ip:
 		sLog("Please enter an IP")
 		return
@@ -105,8 +106,9 @@ func connect_to_master(ip = "inscr-server-test.herokuapp.com"):
 	
 	sLog("Attempting to connect to master server, please wait up to 1 minute")
 	
-	var peer = NetworkedMultiplayerENet.new()
-	var err = peer.create_client(ip, DEFAULT_PORT)
+	var peer = WebSocketClient.new()
+#	var err = peer.create_client(ip, DEFAULT_PORT)
+	var err = peer.connect_to_url(ip, PoolStringArray(), true)
 	
 	if not err:
 		get_tree().network_peer = peer
@@ -181,7 +183,7 @@ func debug_join():
 	# Set username
 	$Lobby/HBoxContainer/VBoxContainer/PanelContainer/VBoxContainer/HBoxContainer2/uname.text = "CHALLENGER CLIENT"
 
-	connect_to_master("localhost")
+	connect_to_master("ws://localhost:8080")
 
 func _ready():
 	randomize()
@@ -194,8 +196,7 @@ func _ready():
 	
 	$VersionLabel.text = VERSION
 	
-#	# Temp for heroku deploy
-	if HEROKU:
+	if SERVER_ONLY:
 		master_server()
 		return
 	
@@ -220,8 +221,8 @@ func master_server():
 	for child in get_children():
 		child.queue_free()
 	
-	var peer = NetworkedMultiplayerENet.new()
-	peer.create_server(DEFAULT_PORT, MAX_PEERS)
+	var peer = WebSocketServer.new()
+	peer.listen(DEFAULT_PORT, PoolStringArray(), true) # Start wss with gd multi
 	get_tree().network_peer = peer
 	
 	print("Master Server open")
